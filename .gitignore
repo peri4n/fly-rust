@@ -14,3 +14,10 @@ Cargo.lock
 *.pdb
 
 .direnv
+
+
+# Added by cargo
+
+/target
+
+store/
