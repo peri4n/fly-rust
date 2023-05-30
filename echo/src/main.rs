@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Deserializer, Serializer};
-use std::io::{self, StdoutLock};
+use std::io::{self, StdoutLock, Write};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Message {
@@ -37,7 +37,7 @@ struct EchoNode {
 }
 
 impl EchoNode {
-    pub fn handle(&mut self, msg: Message, serializer: &mut Serializer<StdoutLock>) {
+    pub fn handle(&mut self, msg: Message, output: &mut StdoutLock) {
         match msg.body.payload {
             Payload::EchoOk { echo: _ } => (),
             Payload::Echo { echo } => {
@@ -50,8 +50,8 @@ impl EchoNode {
                         payload: Payload::EchoOk { echo },
                     },
                 };
-                response.serialize(serializer).expect("Something");
-                println!("");
+                serde_json::to_writer(&mut *output, &response);
+                output.write_all(b"\n");
             }
             Payload::Init { node_id, node_ids: _ } => {
                 self.id = node_id;
@@ -64,8 +64,8 @@ impl EchoNode {
                         payload: Payload::InitOk,
                     },
                 };
-                response.serialize(serializer).expect("Something");
-                println!("");
+                serde_json::to_writer(&mut *output, &response);
+                output.write_all(b"\n");
             }
             Payload::InitOk => (),
         }
@@ -76,7 +76,7 @@ fn main() -> Result<(), io::Error> {
     let stdin = io::stdin().lock();
 
     let stdout = io::stdout();
-    let mut output = Serializer::new(stdout.lock());
+    let mut output = stdout.lock();
 
     let mut node = EchoNode { id: String::new() };
 
